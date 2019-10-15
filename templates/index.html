@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>My ToDo List App</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<style>
+		.container {
+			margin-top: 30px;
+		}
+
+		.badge {
+			margin-right: 7px;
+			cursor: pointer;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<h1 class="center">My Todo List</h1>
+		<div id="alerts">
+		{% if success is defined %}
+		{% if not success %}
+			<div class="alert alert-danger" role="alert">Could not load todos!</div>
+		{% endif %}
+		{% endif %}
+		</div>
+		<div class="input-group mb-3">
+		  <input id="todoinput" type="text" name="todo" class="form-control" placeholder="Enter what you want to do" aria-label="Todo: " aria-describedby="button-addon2" required autofocus>
+		  <div class="input-group-append">
+		    <button class="btn btn-outline-secondary" type="button" id="button-addon2" onclick="submit()">Add!</button>
+		  </div>
+		</div>
+		<ul id="mylist" class="list-group">
+		{% if todos is defined %}
+		{% for t in todos %}
+		  <li class="list-group-item"><span class="badge badge-primary" onclick="removeItem(this)">&times;</span><span>{{ t }}</span></li>
+		{% endfor %}
+		{% endif %}
+		</ul>
+	</div>
+
+	<script>
+		function submit() {
+			var item = document.getElementById("todoinput").value;
+			var fd = new FormData();
+			fd.append('todo', item);
+
+			fetch("/add", {
+				method: "POST",
+				body: fd,
+			}).then(function(resp) {
+				return resp.text();
+			}).then(function(text) {
+				console.log(text);
+				if (text == "1") {
+					var li = document.createElement("li");
+					li.classList.add("list-group-item");
+					li.innerHTML = '<span class="badge badge-primary" onclick="removeItem(this)">&times;</span><span>'+ item +'</span>';
+					document.getElementById("mylist").appendChild(li);
+
+					var al = document.createElement("div");
+					al.classList.add("alert");
+					al.classList.add("alert-success");
+					al.setAttribute("role", "alert");
+					al.innerHTML = "Successfully added item!";
+					document.getElementById("alerts").appendChild(al);
+
+					document.getElementById("todoinput").value = "";
+				} else {
+					var alerts = document.getElementById("alerts");
+					var a = document.createElement("div");
+					a.className = "alert alert-danger";
+					a.setAttribute("role","alert");
+					a.innerHTML = "Could not add item";
+					alerts.appendChild(a);
+				}
+			});
+		}
+
+		function removeItem(elem) {
+			var fd = new FormData();
+			fd.append('target', elem.nextSibling.innerHTML);
+
+			fetch("/delete", {
+				method: "POST",
+				body: fd,
+			}).then(function(resp) {
+				return resp.text();
+			}).then(function(text) {
+				if (text == "1") {
+					elem.parentNode.remove();
+				} else {
+					var alerts = document.getElementById("alerts");
+					var a = document.createElement("div");
+					a.className = "alert alert-danger";
+					a.setAttribute("role","alert");
+					a.innerHTML = "Could not delete item";
+					alerts.appendChild(a);
+				}
+			});
+		}
+		
+
+		document.onkeydown = function(evt){
+        	var keyCode = evt ? (evt.which ? evt.which : evt.keyCode) : event.keyCode;
+        	if(keyCode == 13) {
+            	submit();
+        	}
+    	}
+	</script>
+</body>
+</html>
